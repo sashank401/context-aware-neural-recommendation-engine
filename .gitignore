@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environment
+.venv/
+venv/
+env/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Environment variables
+.env
+.env.*
+
+# Dataset files
+data/raw/*
+data/processed/*
+
+# Keep folder structure
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+
+# Model files
+*.h5
+*.keras
+*.pkl
+*.joblib
+*.ckpt
+
+# Logs
+*.log
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
