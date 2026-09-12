@@ -1,5 +1,8 @@
+from src.retrieval.similarity import cosine_similarity
+
+
 class Retriever:
-    """Interface for retrieving relevant items for a customer."""
+    """Retrieve relevant items using embedding similarity."""
 
     def __init__(self, embedding_store=None):
         self.embedding_store = embedding_store
@@ -13,4 +16,23 @@ class Retriever:
         if k <= 0:
             raise ValueError("k must be greater than 0")
 
-        return []
+        if self.embedding_store is None:
+            return []
+
+        user_embedding = self.embedding_store.get_user_embedding(customer_id)
+
+        if user_embedding is None:
+            return []
+
+        scored_items = []
+
+        for article_id, item_embedding in self.embedding_store.item_embeddings.items():
+            if item_embedding is None:
+                continue
+
+            score = cosine_similarity(user_embedding, item_embedding)
+            scored_items.append((article_id, score))
+
+        scored_items.sort(key=lambda x: x[1], reverse=True)
+
+        return [article_id for article_id, _ in scored_items[:k]]
