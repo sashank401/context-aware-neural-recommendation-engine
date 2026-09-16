@@ -7,8 +7,8 @@ class Retriever:
     def __init__(self, embedding_store=None):
         self.embedding_store = embedding_store
 
-    def retrieve(self, customer_id: str, k: int = 10):
-        """Retrieve top-k relevant article IDs."""
+    def retrieve_with_scores(self, customer_id: str, k: int = 10):
+        """Retrieve top-k article IDs with similarity scores."""
 
         if not customer_id:
             raise ValueError("customer_id is required")
@@ -19,20 +19,51 @@ class Retriever:
         if self.embedding_store is None:
             return []
 
-        user_embedding = self.embedding_store.get_user_embedding(customer_id)
+        user_embedding = self.embedding_store.get_user_embedding(
+            customer_id
+        )
 
         if user_embedding is None:
             return []
 
         scored_items = []
 
-        for article_id, item_embedding in self.embedding_store.item_embeddings.items():
+        for article_id, item_embedding in (
+            self.embedding_store.item_embeddings.items()
+        ):
             if item_embedding is None:
                 continue
 
-            score = cosine_similarity(user_embedding, item_embedding)
-            scored_items.append((article_id, score))
+            try:
+                score = cosine_similarity(
+                    user_embedding,
+                    item_embedding
+                )
+            except ValueError:
+                continue
 
-        scored_items.sort(key=lambda x: x[1], reverse=True)
+            scored_items.append(
+                {
+                    "article_id": article_id,
+                    "score": score
+                }
+            )
 
-        return [article_id for article_id, _ in scored_items[:k]]
+        scored_items.sort(
+            key=lambda item: (-item["score"], item["article_id"])
+        )
+
+        return scored_items[:k]
+
+    def retrieve(self, customer_id: str, k: int = 10):
+        """Retrieve top-k relevant article IDs."""
+
+        results = self.retrieve_with_scores(
+            customer_id,
+            k
+        )
+
+        return [
+            item["article_id"]
+            for item in results
+        ]

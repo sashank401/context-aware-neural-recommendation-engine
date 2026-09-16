@@ -1,5 +1,5 @@
 from fastapi import FastAPI, HTTPException, Query
-
+from src.api.schemas import RecommendationResponse
 from src.recommendation.service import RecommendationService
 
 
@@ -21,7 +21,10 @@ def health():
     return {"status": "healthy"}
 
 
-@app.get("/recommend/{customer_id}")
+@app.get(
+    "/recommend/{customer_id}",
+    response_model=RecommendationResponse
+)
 def recommend(
     customer_id: str,
     k: int = Query(default=10, ge=1, le=100)

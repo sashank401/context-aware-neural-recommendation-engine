@@ -5,6 +5,8 @@ from src.models.embeddings import EmbeddingStore
 class RecommendationService:
     """Service layer for generating personalized recommendations."""
 
+    MAX_RECOMMENDATIONS = 100
+
     def __init__(self, retriever=None):
         if retriever is None:
             embedding_store = EmbeddingStore()
@@ -15,13 +17,21 @@ class RecommendationService:
     def recommend(self, customer_id: str, k: int = 10):
         """Generate top-k recommendations for a customer."""
 
-        if not customer_id:
+        if not customer_id or not customer_id.strip():
             raise ValueError("customer_id is required")
 
         if k <= 0:
             raise ValueError("k must be greater than 0")
 
-        recommendations = self.retriever.retrieve(customer_id, k)
+        if k > self.MAX_RECOMMENDATIONS:
+            raise ValueError(
+                f"k must not exceed {self.MAX_RECOMMENDATIONS}"
+            )
+
+        recommendations = self.retriever.retrieve(
+            customer_id,
+            k
+        )
 
         return {
             "customer_id": customer_id,
