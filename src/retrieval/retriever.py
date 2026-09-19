@@ -53,7 +53,12 @@ class Retriever:
             key=lambda item: (-item["score"], item["article_id"])
         )
 
-        return scored_items[:k]
+        top_items = scored_items[:k]
+
+        for rank, item in enumerate(top_items, start=1):
+            item["rank"] = rank
+
+        return top_items
 
     def retrieve(self, customer_id: str, k: int = 10):
         """Retrieve top-k relevant article IDs."""

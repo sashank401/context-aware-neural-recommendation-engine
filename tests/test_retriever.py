@@ -104,3 +104,32 @@ def test_retriever_handles_empty_embedding_store():
     )
 
     assert result == []
+
+
+def test_retriever_assigns_ranks():
+    store = EmbeddingStore()
+
+    store.add_user_embedding(
+        "customer_001",
+        [1, 0]
+    )
+
+    store.add_item_embedding(
+        "article_A",
+        [1, 0]
+    )
+
+    store.add_item_embedding(
+        "article_B",
+        [0.8, 0.2]
+    )
+
+    retriever = Retriever(store)
+
+    results = retriever.retrieve_with_scores(
+        "customer_001",
+        k=2
+    )
+
+    assert results[0]["rank"] == 1
+    assert results[1]["rank"] == 2
