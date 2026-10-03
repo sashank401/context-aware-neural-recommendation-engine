@@ -40,3 +40,5 @@ data/processed/*
 # OS
 .DS_Store
 Thumbs.db
+# Trained model artifacts
+models/
