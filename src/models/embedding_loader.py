@@ -14,6 +14,9 @@ class NumpyEmbeddingLoader:
         self.item_embeddings = None
         self.item_ids = None
 
+        self.user_id_to_index = {}
+        self.item_id_to_index = {}
+
     def load(self):
         """Load all embedding arrays and validate their dimensions."""
 
@@ -55,6 +58,7 @@ class NumpyEmbeddingLoader:
         )
 
         self._validate()
+        self._build_indexes()
 
         return self
 
@@ -88,26 +92,35 @@ class NumpyEmbeddingLoader:
                 "User and item embedding dimensions must match"
             )
 
+    def _build_indexes(self):
+        """Build ID-to-index mappings for fast embedding lookup."""
+
+        self.user_id_to_index = {
+            str(customer_id): index
+            for index, customer_id in enumerate(self.user_ids)
+        }
+
+        self.item_id_to_index = {
+            str(article_id): index
+            for index, article_id in enumerate(self.item_ids)
+        }
+
     def get_user_embedding(self, customer_id):
         """Return the embedding for a customer ID."""
 
-        matches = np.where(
-            self.user_ids == str(customer_id)
-        )[0]
+        index = self.user_id_to_index.get(str(customer_id))
 
-        if len(matches) == 0:
+        if index is None:
             return None
 
-        return self.user_embeddings[matches[0]]
+        return self.user_embeddings[index]
 
     def get_item_embedding(self, article_id):
         """Return the embedding for an article ID."""
 
-        matches = np.where(
-            self.item_ids == str(article_id)
-        )[0]
+        index = self.item_id_to_index.get(str(article_id))
 
-        if len(matches) == 0:
+        if index is None:
             return None
 
-        return self.item_embeddings[matches[0]]
+        return self.item_embeddings[index]
