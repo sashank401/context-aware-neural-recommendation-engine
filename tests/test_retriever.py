@@ -1,3 +1,5 @@
+import pytest
+
 from src.models.embeddings import EmbeddingStore
 from src.retrieval.retriever import Retriever
 
@@ -5,63 +7,28 @@ from src.retrieval.retriever import Retriever
 def test_retriever_ranks_items_by_similarity():
     store = EmbeddingStore()
 
-    store.add_user_embedding(
-        "customer_001",
-        [1, 0]
-    )
-
-    store.add_item_embedding(
-        "article_A",
-        [1, 0]
-    )
-
-    store.add_item_embedding(
-        "article_B",
-        [0.8, 0.2]
-    )
-
-    store.add_item_embedding(
-        "article_C",
-        [-1, 0]
-    )
+    store.add_user_embedding("customer_001", [1, 0])
+    store.add_item_embedding("article_A", [1, 0])
+    store.add_item_embedding("article_B", [0.8, 0.2])
+    store.add_item_embedding("article_C", [-1, 0])
 
     retriever = Retriever(store)
 
-    result = retriever.retrieve(
-        "customer_001",
-        k=2
-    )
+    result = retriever.retrieve("customer_001", k=2)
 
-    assert result == [
-        "article_A",
-        "article_B"
-    ]
+    assert result == ["article_A", "article_B"]
 
 
 def test_retriever_returns_scores():
     store = EmbeddingStore()
 
-    store.add_user_embedding(
-        "customer_001",
-        [1, 0]
-    )
-
-    store.add_item_embedding(
-        "article_A",
-        [1, 0]
-    )
-
-    store.add_item_embedding(
-        "article_B",
-        [0, 1]
-    )
+    store.add_user_embedding("customer_001", [1, 0])
+    store.add_item_embedding("article_A", [1, 0])
+    store.add_item_embedding("article_B", [0, 1])
 
     retriever = Retriever(store)
 
-    result = retriever.retrieve_with_scores(
-        "customer_001",
-        k=2
-    )
+    result = retriever.retrieve_with_scores("customer_001", k=2)
 
     assert len(result) == 2
     assert result[0]["article_id"] == "article_A"
@@ -72,36 +39,22 @@ def test_retriever_returns_scores():
 
 def test_retriever_handles_missing_user_embedding():
     store = EmbeddingStore()
-
-    store.add_item_embedding(
-        "article_A",
-        [1, 0]
-    )
+    store.add_item_embedding("article_A", [1, 0])
 
     retriever = Retriever(store)
 
-    result = retriever.retrieve(
-        "unknown_customer",
-        k=5
-    )
+    result = retriever.retrieve("unknown_customer", k=5)
 
     assert result == []
 
 
 def test_retriever_handles_empty_embedding_store():
     store = EmbeddingStore()
-
-    store.add_user_embedding(
-        "customer_001",
-        [1, 0]
-    )
+    store.add_user_embedding("customer_001", [1, 0])
 
     retriever = Retriever(store)
 
-    result = retriever.retrieve(
-        "customer_001",
-        k=5
-    )
+    result = retriever.retrieve("customer_001", k=5)
 
     assert result == []
 
@@ -109,27 +62,28 @@ def test_retriever_handles_empty_embedding_store():
 def test_retriever_assigns_ranks():
     store = EmbeddingStore()
 
-    store.add_user_embedding(
-        "customer_001",
-        [1, 0]
-    )
-
-    store.add_item_embedding(
-        "article_A",
-        [1, 0]
-    )
-
-    store.add_item_embedding(
-        "article_B",
-        [0.8, 0.2]
-    )
+    store.add_user_embedding("customer_001", [1, 0])
+    store.add_item_embedding("article_A", [1, 0])
+    store.add_item_embedding("article_B", [0.8, 0.2])
 
     retriever = Retriever(store)
 
-    results = retriever.retrieve_with_scores(
-        "customer_001",
-        k=2
-    )
+    results = retriever.retrieve_with_scores("customer_001", k=2)
 
     assert results[0]["rank"] == 1
     assert results[1]["rank"] == 2
+
+
+@pytest.mark.parametrize("k", [0, -1, 1.5, True])
+def test_retriever_rejects_invalid_retrieval_limit(k):
+    retriever = Retriever()
+
+    with pytest.raises(ValueError, match="k must be a positive integer"):
+        retriever.retrieve_with_scores("customer_001", k=k)
+
+
+def test_retriever_rejects_missing_customer_id():
+    retriever = Retriever()
+
+    with pytest.raises(ValueError, match="customer_id is required"):
+        retriever.retrieve_with_scores("", k=5)
