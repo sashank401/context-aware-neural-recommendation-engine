@@ -13,8 +13,8 @@ class Retriever:
         if not customer_id:
             raise ValueError("customer_id is required")
 
-        if k <= 0:
-            raise ValueError("k must be greater than 0")
+        if not isinstance(k, int) or isinstance(k, bool) or k <= 0:
+            raise ValueError("k must be a positive integer")
 
         if self.embedding_store is None:
             return []
