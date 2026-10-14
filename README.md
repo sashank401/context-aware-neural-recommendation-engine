@@ -1,713 +1,630 @@
 # Context-Aware Neural Recommendation Engine
 
-A large-scale, context-aware neural recommendation system designed for e-commerce and content recommendation. The system uses **user behavior, user metadata, item metadata, and contextual signals** to generate personalized recommendations through a **Two-Tower Neural Network architecture**.
+A context-aware neural recommendation system for personalized fashion product retrieval, built using the H&M Personalized Fashion Recommendations dataset.
 
-The project is built around the **H&M Personalized Fashion Recommendations dataset**, containing more than **31 million transactions**, over **1.3 million customers**, and more than **100,000 articles**.
+The project combines customer behavior, customer metadata, product metadata, feature engineering, and a Two-Tower Neural Network to generate user and item embeddings. A similarity-based retrieval pipeline and FastAPI service provide product recommendations.
+
+The implementation covers data analysis, model training, embedding generation, offline ranking evaluation, recommendation retrieval, API integration, and automated testing.
 
 ---
 
 ## 🚀 Project Overview
 
-Traditional recommendation systems often struggle with:
+Recommendation systems help users discover products that match their interests. However, e-commerce recommendation presents several challenges:
 
-* New users with little or no interaction history
-* New products with limited interaction data
-* Changing user interests
-* Extremely sparse customer-item interactions
-* Large-scale retrieval across hundreds of thousands of products
-* Combining user, item, behavioral, and contextual information
+- Sparse customer–item interactions.
+- Large product catalogs.
+- Differences in customer preferences.
+- Products with limited historical interactions.
+- New users and products with limited interaction history.
+- Efficient retrieval of relevant products from a large catalog.
 
-This project addresses these challenges through a scalable recommendation architecture based on:
+This project explores a neural retrieval approach using:
 
-* Large-scale data processing with **Apache Spark**
-* Feature engineering from customer, article, and transaction data
-* A **Two-Tower Neural Network**
-* Dense user and item embeddings
-* Similarity-based candidate retrieval
-* ANN-based retrieval for scalable inference
-* Redis-based embedding storage
-* FastAPI serving
-* Airflow-based pipeline orchestration
-* Docker-based deployment
+- **Apache Spark / PySpark** for large-scale data processing.
+- **Feature engineering** for customer and product representations.
+- **TensorFlow and TensorFlow Recommenders** for neural recommendation modeling.
+- **Two-Tower Neural Network** architecture for user and item embeddings.
+- **NumPy embedding storage** and cosine-similarity-based retrieval.
+- **FastAPI** for recommendation serving.
+- **Pytest** for automated testing.
 
----
-
-# 🎯 Objectives
-
-The main objectives of this project are:
-
-1. Process millions of e-commerce interactions efficiently.
-2. Perform large-scale exploratory data analysis.
-3. Build meaningful user and item features.
-4. Handle sparse customer-item interactions.
-5. Analyze user and item cold-start behavior.
-6. Train a Two-Tower neural retrieval model.
-7. Generate user and item embeddings.
-8. Retrieve personalized items using embedding similarity.
-9. Evaluate recommendation quality using Recall@K and NDCG@K.
-10. Integrate the ML model with a production-style recommendation API.
-11. Build a foundation for scalable retraining and deployment.
+Approximate nearest-neighbor retrieval, Redis integration, Airflow orchestration, and containerized deployment are potential extensions to the current implementation.
 
 ---
 
-# 🏗️ System Architecture
+## 🎯 Project Objectives
+
+The main objectives are to:
+
+1. Analyze a large-scale e-commerce transaction dataset.
+2. Explore customer behavior, product popularity, and interaction sparsity.
+3. Construct customer and product features.
+4. Prepare training and validation interactions chronologically.
+5. Train a Two-Tower neural retrieval model.
+6. Generate 64-dimensional user and item embeddings.
+7. Retrieve candidate products using vector similarity.
+8. Evaluate recommendation quality using Recall@K, Precision@K, and NDCG@K.
+9. Expose recommendations through a FastAPI service.
+10. Validate the engineering components through automated tests.
+11. Identify opportunities for better ranking quality and scalable retrieval.
+
+---
+
+## 🏗️ System Architecture
 
 ```text
-                         ┌─────────────────────┐
-                         │    H&M Raw Data     │
-                         │                     │
-                         │ Customers           │
-                         │ Articles            │
-                         │ Transactions        │
-                         └──────────┬──────────┘
-                                    │
-                                    ▼
-                         ┌─────────────────────┐
-                         │  Apache Spark       │
-                         │ Large-Scale ETL     │
-                         └──────────┬──────────┘
-                                    │
-                                    ▼
-                    ┌──────────────────────────────┐
-                    │     Feature Engineering      │
-                    │                              │
-                    │ User Features                │
-                    │ Item Features                │
-                    │ Behavioral Features          │
-                    │ Contextual Features          │
-                    └──────────────┬───────────────┘
-                                   │
-                                   ▼
-                     ┌────────────────────────┐
-                     │  Two-Tower Neural Net  │
-                     │                        │
-                     │ ┌────────┐ ┌────────┐ │
-                     │ │  User  │ │  Item  │ │
-                     │ │ Tower  │ │ Tower  │ │
-                     │ └────┬───┘ └───┬────┘ │
-                     │      │           │      │
-                     │      ▼           ▼      │
-                     │   User Emb.   Item Emb. │
-                     └───────────┬────────────┘
-                                 │
-                                 ▼
-                       ┌────────────────────┐
-                       │ Embedding Retrieval│
-                       │                    │
-                       │ Cosine / ANN       │
-                       └─────────┬──────────┘
-                                 │
-                                 ▼
-                       ┌────────────────────┐
-                       │ Recommendation     │
-                       │ Service            │
-                       └─────────┬──────────┘
-                                 │
-                                 ▼
-                         ┌───────────────┐
-                         │    FastAPI    │
-                         └───────────────┘
+                 H&M Fashion Dataset
+             Customers | Articles | Transactions
+                            |
+                            v
+                  Data Processing
+                        PY Spark
+                            |
+                            v
+                  Feature Engineering
+                User Features / Item Features
+                            |
+                            v
+                 Two-Tower Neural Model
+                    /             \
+                   v               v
+              User Tower       Item Tower
+                   |               |
+                   v               v
+             User Embedding   Item Embedding
+                    \             /
+                     \           /
+                      v         v
+                  Similarity Retrieval
+                     Cosine Similarity
+                            |
+                            v
+                  Top-K Recommendations
+                            |
+                            v
+                   Recommendation Service
+                            |
+                            v
+                         FastAPI
+                            |
+                            v
+                          Client
 ```
+
+The user tower represents a customer, while the item tower represents a product. Both produce vectors in a shared embedding space.
+
+At inference time, the retrieval component compares the selected customer's embedding with available item embeddings and returns the highest-scoring candidates.
 
 ---
 
-# 📊 Dataset
+## 📊 Dataset
 
-This project uses the **H&M Personalized Fashion Recommendations** dataset.
+This project uses the **H&M Personalized Fashion Recommendations** dataset available through Kaggle.
 
-The dataset contains three primary sources:
+The dataset contains three primary sources.
 
 ### Customers
 
-Customer-level information such as:
+Customer-level information, including:
 
-* Customer ID
-* Age
-* Fashion News subscription
-* Active status
-* Club membership
-* Fashion news frequency
-* Postal code
+- Customer identifier.
+- Age.
+- Active status and membership-related attributes.
+- Fashion news subscription information.
+- Other available customer metadata.
 
 ### Articles
 
-Product-level information such as:
+Product-level information, including:
 
-* Article ID
-* Product code
-* Product type
-* Product group
-* Colour
-* Department
-* Index
-* Section
-* Garment group
-* Product description
+- Article identifier.
+- Product code and product type.
+- Product group and colour.
+- Department and index.
+- Section and garment group.
+- Other product metadata.
 
 ### Transactions
 
-Historical customer-item interactions containing:
+Historical customer–item interactions containing:
 
-* Transaction date
-* Customer ID
-* Article ID
-* Price
-* Sales channel
-
----
-
-# 📈 Dataset Scale
-
-The full transaction dataset contains approximately:
-
-| Metric                           |                   Value |
-| -------------------------------- | ----------------------: |
-| Transactions                     |              31,788,324 |
-| Unique customers in transactions |               1,362,281 |
-| Total customer records           |               1,371,980 |
-| Unique articles in transactions  |                 104,547 |
-| Total article records            |                 105,542 |
-| Transaction date range           | 2018-09-20 → 2020-09-22 |
-| Raw transaction file size        |                 ~3.5 GB |
-
-The scale of the transaction data makes conventional Excel-based analysis impractical, so **Apache Spark** is used for large-scale processing.
+- Transaction date.
+- Customer identifier.
+- Article identifier.
+- Purchase price.
+- Sales channel.
 
 ---
 
-# 🔍 Exploratory Data Analysis
+## 📈 Dataset Scale
 
-Large-scale EDA has been completed using Spark-based aggregation and Python visualization.
+The full transaction dataset contains approximately 31.8 million transactions.
 
-The analysis includes:
+| Metric | Value |
+|---|---:|
+| Total transactions | 31,788,324 |
+| Unique customers in transactions | 1,362,281 |
+| Customer records | 1,371,980 |
+| Unique articles in transactions | 104,547 |
+| Article records | 105,542 |
+| First transaction date | 2018-09-20 |
+| Last transaction date | 2020-09-22 |
+| Approximate raw transaction file size | 3.5 GB |
 
-### Transaction Analysis
+### Model training data
 
-* Total transaction volume
-* Unique customers
-* Unique articles
-* Transaction date range
-* Price statistics
-* Monthly transaction trends
-* Sales channel distribution
+The current model experiment uses a prepared subset of interactions rather than all transactions in the original dataset.
 
-### Customer Analysis
+| Dataset component | Rows |
+|---|---:|
+| Training interactions | 2,002,124 |
+| Validation interactions | 300,304 |
 
-* Customer interaction counts
-* Minimum/maximum interactions
-* Average interactions per customer
-* Customer metadata completeness
+These figures describe the current training and validation files. They should not be confused with the full historical transaction count.
 
-### Article Analysis
+---
 
-* Article interaction frequency
-* Most frequently interacted articles
-* Product category distribution
-* Product type distribution
-* Department distribution
-* Colour distribution
-* Article popularity
+## 🔍 Exploratory Data Analysis
 
-### Interaction Analysis
+Exploratory data analysis was performed to understand the scale and characteristics of the recommendation problem.
 
-The customer-item interaction matrix is extremely sparse.
+### Transaction analysis
 
-Observed results:
+- Total transaction volume.
+- Unique customers and articles.
+- Transaction date range.
+- Minimum, maximum, and average transaction prices.
+- Monthly transaction trends.
+- Sales channel distribution.
+
+### Customer analysis
+
+- Customer interaction counts.
+- Customer metadata completeness.
+- Purchase behavior and frequency.
+- Distribution of customer activity.
+
+### Article analysis
+
+- Most frequently interacted articles.
+- Product type and category distributions.
+- Department and colour distributions.
+- Article popularity and interaction frequency.
+
+### Interaction sparsity
+
+The recorded interaction analysis produced the following results:
 
 ```text
-Unique customers                  1,362,281
-Unique articles                     104,547
-Unique customer-item pairs       27,306,439
-Possible customer-item pairs   142,422,391,707
+Unique customers:                 1,362,281
+Unique articles:                    104,547
+Unique customer-item pairs:       27,306,439
+Possible customer-item pairs: 142,422,391,707
 
-Interaction density                  0.019173%
-Interaction sparsity                 99.980827%
+Interaction density:                 0.019173%
+Interaction sparsity:               99.980827%
 ```
 
-This high sparsity motivates the use of embedding-based neural retrieval rather than a dense matrix-based recommendation approach.
+The interaction matrix is extremely sparse. This motivates an embedding-based retrieval approach that learns representations of customers and products instead of constructing and processing a dense customer–item matrix.
 
 ---
 
-# 📉 Long-Tail Analysis
+## 📉 Long-Tail Analysis
 
-The article interaction distribution exhibits a long-tail pattern.
-
-Results include:
+The article interaction distribution demonstrates that many products receive relatively few interactions.
 
 ```text
-Total articles                 104,547
-Articles with exactly 1 interaction     4,491
-Articles with <= 5 interactions        14,669
-Articles with <= 10 interactions       22,477
-Articles with <= 50 interactions       47,851
+Total articles:                       104,547
+Articles with exactly 1 interaction:    4,491
+Articles with <= 5 interactions:       14,669
+Articles with <= 10 interactions:      22,477
+Articles with <= 50 interactions:      47,851
 ```
 
-This demonstrates that a substantial portion of the catalog receives relatively few interactions.
-
-The system therefore needs to consider item metadata and learned representations rather than relying exclusively on historical popularity.
+This long-tail behavior highlights the limitations of recommending products based only on popularity. Product metadata and learned representations can provide additional information, although their ability to improve recommendations must be verified through evaluation.
 
 ---
 
-# 🔄 Repeat Interaction Analysis
+## 🔄 Repeat Interaction Analysis
 
-Historical interactions were analyzed at the unique customer-item pair level.
+The recorded interaction analysis identified repeat customer–item pairs.
 
 ```text
-Unique customer-item pairs       27,306,439
-Repeat customer-item pairs        3,515,413
-Repeat pair percentage               12.87%
+Unique customer-item pairs: 27,306,439
+Repeat customer-item pairs:   3,515,413
+Repeat pair percentage:          12.87%
 ```
 
-This provides evidence that both repeated preferences and exploration of different products are present in the interaction history.
+Repeat interactions can indicate recurring preferences. They also make it important to define the evaluation target clearly—for example, whether the system should predict future purchases of previously purchased products or prioritize new products.
 
 ---
 
-# 🧊 Cold-Start Analysis
+## 🧊 Cold-Start Analysis
 
-Cold-start behavior was evaluated using a chronological validation period.
-
-### Validation period
+Cold-start behavior was analyzed using a chronological validation period.
 
 ```text
-2020-08-24 → 2020-09-22
+Validation period: 2020-08-24 to 2020-09-22
 ```
 
-Results:
+| Metric | Value |
+|---|---:|
+| Validation users | 245,945 |
+| Cold-start users | 24,252 |
+| Cold-start user rate | 9.86% |
+| Validation articles | 28,889 |
+| Cold-start articles | 3,790 |
+| Cold-start article rate | 13.12% |
 
-| Metric                  |   Value |
-| ----------------------- | ------: |
-| Validation users        | 245,945 |
-| Cold-start users        |  24,252 |
-| Cold-start user rate    |   9.86% |
-| Validation articles     |  28,889 |
-| Cold-start articles     |   3,790 |
-| Cold-start article rate |  13.12% |
+A user is considered cold-start in this analysis when they appear during validation but have no interaction history in the preceding training period. An article is treated similarly when it appears during validation but not in the earlier training interactions.
 
-A user is treated as cold-start in this analysis when the user appears in the validation period but has no interaction history in the preceding training period.
-
-An article is treated similarly when it appears during validation without appearing in the earlier training period.
-
-These results motivate the use of metadata-aware representations and dedicated cold-start handling.
+Metadata-aware representations are a potential way to support cold-start scenarios. The current metrics should not be interpreted as proof that cold-start recommendations are already solved.
 
 ---
 
-# 🧠 Feature Engineering
+## 🧠 Feature Engineering
 
-The feature engineering pipeline creates separate user and item feature representations.
+The feature engineering pipeline constructs user and item feature representations from the available source data and historical interactions.
 
-## User Features
+### User features
 
 Examples include:
 
-* Customer ID
-* Age
-* Club membership
-* Fashion news frequency
-* Active status
-* Purchase count
-* Average purchase price
-* Total spend
-* First purchase date
-* Last purchase date
+- Customer identifier.
+- Age and available customer metadata.
+- Purchase count.
+- Average purchase price.
+- Total spend.
+- Other available interaction statistics.
 
-## Item Features
+### Item features
 
 Examples include:
 
-* Article ID
-* Product code
-* Product name
-* Product type
-* Product group
-* Colour
-* Department
-* Index
-* Section
-* Garment group
-* Purchase count
-* Average price
-* Total revenue
-* First purchase date
-* Last purchase date
+- Article identifier.
+- Product type and category information.
+- Purchase count.
+- Average price.
+- Total revenue.
+- Other available article metadata.
 
-Categorical missing values are handled using an explicit `UNKNOWN` representation where appropriate, while numerical missing values are handled using defined fallback values.
+### Numerical preprocessing
+
+Numerical features are converted to appropriate numeric types, missing values are handled using defined fallback values, and continuous features are scaled where required by the model pipeline.
+
+Consistent feature preprocessing matters because numerical values with very different scales can dominate a neural network's context projection.
 
 ---
 
-# ⚙️ Data Processing Pipeline
+## ⚙️ Data Processing Pipeline
 
-The large transaction dataset is processed using Apache Spark.
+Apache Spark / PySpark is used for large-scale processing of transaction data and aggregation tasks.
 
 ```text
-Raw Transactions
-       │
-       ▼
-Spark DataFrame
-       │
-       ▼
-Schema Validation
-       │
-       ▼
-Transaction Aggregation
-       │
-       ├──────────────► User Features
-       │
-       └──────────────► Item Features
-                              │
-                              ▼
-                       Feature Engineering
+Raw CSV Files
+      |
+      v
+Schema and Data Validation
+      |
+      v
+Transaction Processing
+      |
+      v
+Customer / Article Aggregations
+      |
+      v
+Feature Engineering
+      |
+      v
+Prepared Interaction and Feature Tables
+      |
+      v
+Model Training and Evaluation
 ```
 
-The pipeline avoids loading the entire 3.5 GB transaction file into pandas memory.
+Spark supports large-scale transformations, while pandas is used for appropriate downstream data analysis and prepared tables.
 
-Spark is used for large-scale computation, while pandas is used only for small aggregated outputs where appropriate.
+The raw transaction dataset is approximately 3.5 GB, so processing it as a whole in an ordinary spreadsheet is impractical.
 
 ---
 
-# 🧪 Train / Validation Strategy
+## 🧪 Training and Validation Strategy
 
-The recommendation problem is treated as a temporal prediction problem.
+The project uses a chronological train/validation approach to model a future-interaction recommendation task.
 
-Instead of randomly splitting interactions, the data is divided chronologically.
+Historical interactions are used for training, while later interactions are used for validation.
 
 ```text
-Historical Interactions
-───────────────────────────────────────┬──────────────
-                                       │
-                                  Validation
-                                       │
-                                       ▼
-                                 Future period
+Historical Interactions                 Later Interactions
+|--------------------------------------|-------------------|
+                 Training                   Validation
 ```
 
-This reduces temporal leakage and better represents the real-world recommendation scenario where historical behavior is used to predict future interactions.
+A chronological split helps reduce temporal leakage and better reflects the scenario in which historical behavior is used to recommend products for a later period.
+
+The training and validation interaction counts for the current experiment are 2,002,124 and 300,304, respectively.
 
 ---
 
-# 🧠 Two-Tower Neural Network
+## 🧠 Two-Tower Neural Network
 
-The core ML model uses a Two-Tower architecture.
+The core recommendation model uses a Two-Tower Neural Network.
 
-## User Tower
+### User tower
 
-The User Tower learns a dense representation of a customer using features such as:
-
-* Customer identity
-* Demographic information
-* Historical purchase behavior
-* Interaction statistics
-* Contextual features
+The user tower generates a representation of the customer using the available user identifier and contextual features.
 
 ```text
-User Features
-      │
-      ▼
-Embedding Layers
-      │
-      ▼
-Dense Neural Layers
-      │
-      ▼
-User Embedding
+Customer ID + User Features
+             |
+             v
+      Embedding Layer
+             |
+             v
+     Context Projection
+             |
+             v
+      64-D User Vector
 ```
 
-## Item Tower
+### Item tower
 
-The Item Tower learns a dense representation of an article using:
-
-* Article identity
-* Product metadata
-* Category information
-* Colour
-* Department
-* Historical interaction statistics
+The item tower generates a representation of a product using its identifier and available product context.
 
 ```text
-Item Features
-      │
-      ▼
-Embedding Layers
-      │
-      ▼
-Dense Neural Layers
-      │
-      ▼
-Item Embedding
+Article ID + Item Features
+             |
+             v
+      Embedding Layer
+             |
+             v
+     Context Projection
+             |
+             v
+      64-D Item Vector
 ```
 
-## Retrieval
+### Retrieval
 
-The model learns to place users close to items they are likely to interact with in embedding space.
+The model learns representations that can be compared in a shared vector space.
 
 ```text
 User Embedding
-      │
-      │ similarity
-      ▼
-Item Embeddings
-      │
-      ▼
-Top-K Candidates
-```
-
-TensorFlow and TensorFlow Recommenders are used for the neural retrieval model.
-
----
-
-# 📏 Model Evaluation
-
-Recommendation quality will be evaluated using ranking metrics rather than classification accuracy alone.
-
-Planned metrics include:
-
-### Recall@K
-
-Measures whether relevant items appear within the top K recommendations.
-
-```text
-Recall@K =
-Relevant items retrieved in top K
----------------------------------
-Total relevant items
-```
-
-### NDCG@K
-
-Measures ranking quality while giving higher importance to relevant items appearing near the top of the recommendation list.
-
-Evaluation will be performed on the temporal validation set.
-
----
-
-# 🔎 Embedding Retrieval
-
-After training, the Two-Tower model will generate:
-
-```text
-User Embeddings
-       +
-Item Embeddings
-       ↓
-Similarity Search
-       ↓
+       |
+       v
+Similarity with Item Embeddings
+       |
+       v
+Rank Candidate Products
+       |
+       v
 Top-K Recommendations
 ```
 
-The engineering layer already contains interfaces for:
-
-* Embedding storage
-* User embedding lookup
-* Item embedding lookup
-* Cosine similarity
-* Top-K retrieval
-* Recommendation service
-
-The initial retrieval implementation provides a foundation that can later be replaced with an ANN index for large-scale serving.
+The model is implemented using TensorFlow/Keras and TensorFlow Recommenders. The current embedding dimension is 64.
 
 ---
 
-# ⚡ Approximate Nearest Neighbor Retrieval
+## 📦 Generated Embedding Artifacts
 
-For production-scale retrieval, comparing every user embedding against every item embedding is inefficient.
+The current model pipeline generates NumPy embedding arrays and corresponding ID arrays.
 
-The planned architecture is:
+| Artifact | Purpose |
+|---|---|
+| `user_embeddings.npy` | User embedding vectors |
+| `item_embeddings.npy` | Item embedding vectors |
+| `user_ids.npy` | User IDs aligned with user vectors |
+| `item_ids.npy` | Article IDs aligned with item vectors |
+| `context_user_tower.keras` | Saved user tower |
+| `context_item_tower.keras` | Saved item tower |
+
+Recorded embedding shapes:
+
+| Artifact | Shape |
+|---|---|
+| User embeddings | `(1371980, 64)` |
+| Item embeddings | `(105542, 64)` |
+
+These generated model artifacts are local runtime assets and are excluded from Git version control.
+
+The ID arrays must remain aligned with their corresponding embedding rows. Incorrect alignment can produce recommendations for the wrong users or articles even when the API executes successfully.
+
+---
+
+## 🔎 Embedding-Based Retrieval
+
+The current retrieval implementation includes:
+
+- User embedding lookup.
+- Item embedding lookup.
+- Cosine similarity.
+- Candidate scoring and top-K retrieval.
+- Recommendation service integration.
+
+The retrieval component compares the selected user's embedding with the stored item embeddings and ranks candidates by similarity.
+
+This provides a straightforward retrieval implementation for the current catalog. A full-catalog similarity scan may become expensive as catalog size and request volume increase, motivating a future approximate nearest-neighbor index.
+
+---
+
+## 📏 Offline Ranking Evaluation
+
+Recommendation quality is measured using ranking metrics rather than relying only on API responses or model training loss.
+
+The current neural evaluation uses a deterministic sample of 500 users with random seed 42.
+
+### Final recorded neural results
+
+| Metric | Result |
+|---|---:|
+| Recall@5 | 0.83% |
+| Recall@10 | 1.22% |
+| Recall@20 | 1.96% |
+| Recall@50 | 3.30% |
+| Recall@100 | 5.21% |
+| Precision@5 | 0.24% |
+| Precision@10 | 0.20% |
+| NDCG@10 | 0.0073 |
+| NDCG@50 | 0.0125 |
+| Evaluated users | 500 |
+| Random seed | 42 |
+
+### Recall@K
+
+Recall@K measures the proportion of relevant validation items retrieved within the top K recommendations.
+
+\[
+\operatorname{Recall@K} =
+\frac{\text{Relevant items retrieved in top K}}
+{\text{Total relevant items}}
+\]
+
+### Precision@K
+
+Precision@K measures the proportion of the top K recommendations that are relevant.
+
+### NDCG@K
+
+Normalized Discounted Cumulative Gain measures ranking quality and gives greater weight to relevant items appearing nearer the top of the recommendation list.
+
+### Interpreting the results
+
+The current evaluation reports positive Recall@K, Precision@K, and NDCG values. This confirms that the evaluation retrieves relevant items for some sampled users under its current evaluation rules.
+
+The results also indicate that recommendation quality remains an area for improvement.
+
+### Baseline comparison limitation
+
+The recorded popularity baseline was evaluated on 99 users, while the neural model was evaluated on 500 users.
+
+Because the evaluation populations differ, these results do not establish whether the neural model outperforms the popularity baseline. A fair comparison requires both methods to use the same users, relevant targets, candidate catalog, and seen-item filtering rules.
+
+### Evaluation artifacts
 
 ```text
-User Embedding
-      │
-      ▼
-ANN Index
-      │
-      ▼
-Candidate Items
-      │
-      ▼
-Ranking
-      │
-      ▼
-Recommendations
-```
+reports/
+├── ranking_metrics.csv
+└── ranking_metrics_fast_sample.csv
 
-The ANN layer is intended to support fast retrieval across the full item catalog.
+notebooks/
+└── 02_two_tower_training.ipynb
+```
 
 ---
 
-# 🗄️ Redis Embedding Store
+## 🌐 FastAPI Recommendation Service
 
-Redis is planned as a low-latency storage layer for generated embeddings.
+The project includes a FastAPI service that exposes recommendation functionality through HTTP endpoints.
 
-Example conceptual structure:
+### Available endpoints
+
+| Method | Endpoint | Purpose |
+|---|---|---|
+| GET | `/` | Service information |
+| GET | `/health` | Health check |
+| GET | `/recommend/{customer_id}?k=5` | Retrieve recommendations for a customer |
+
+### Start the API
+
+Activate the virtual environment and run the following command from the repository root:
+
+```powershell
+$env:PYTHONPATH = "$PWD"
+python -m uvicorn src.api.main:app --reload
+```
+
+The local service is available at:
 
 ```text
-user:{customer_id}  → user embedding
-item:{article_id}   → item embedding
+http://127.0.0.1:8000
 ```
 
-This separates model training from online recommendation serving.
-
----
-
-# 🌐 FastAPI Recommendation Service
-
-A FastAPI service has already been implemented as the serving foundation.
-
-Current endpoints include:
+Interactive API documentation:
 
 ```text
-GET /
-GET /health
-GET /recommend/{customer_id}?k=10
+http://127.0.0.1:8000/docs
 ```
 
-Example:
+Health endpoint:
 
 ```text
-GET /recommend/customer_001?k=5
+http://127.0.0.1:8000/health
 ```
 
-Example response structure:
+### Example recommendation request
 
-```json
-{
-  "customer_id": "customer_001",
-  "recommendations": [
-    "article_001",
-    "article_002",
-    "article_003"
-  ]
-}
+```powershell
+Invoke-RestMethod "http://127.0.0.1:8000/recommend/PASTE_REAL_CUSTOMER_ID?k=5"
 ```
 
-The current service uses the retrieval abstraction, allowing the underlying retrieval implementation to evolve without changing the API contract.
+Replace `PASTE_REAL_CUSTOMER_ID` with an actual customer ID from the saved user ID array.
+
+The endpoint returns article IDs for the selected customer. The recommendation limit is restricted to values from 1 through 100.
+
+The current API and retrieval implementation have been exercised successfully. The availability of an endpoint does not, by itself, guarantee high recommendation relevance or production-scale latency.
 
 ---
 
-# 🧪 Testing
+## 🧪 Automated Testing
 
-Automated tests have been added for the engineering components.
+The engineering test suite covers the implemented API and retrieval components.
 
-Current test coverage includes:
+Examples include:
 
-* Recommendation service validation
-* Retriever behavior
-* Cosine similarity
-* API endpoints
-* Invalid `k` values
-* Recommendation limits
-* Retrieval ranking metadata
-* Edge cases
+- API root and health endpoints.
+- Recommendation endpoint behavior.
+- Request validation.
+- Recommendation limit validation.
+- Embedding loading and lookup.
+- Cosine similarity.
+- Retriever behavior.
+- Recommendation service behavior.
+- Edge cases and invalid inputs.
 
-The current engineering test suite has passed successfully during development.
+### Run the tests
 
----
+```powershell
+$env:PYTHONPATH = "$PWD"
+python -m pytest -q
+```
 
-# 🐳 Deployment Architecture
-
-The planned production-style architecture is:
+### Latest recorded result
 
 ```text
-                    ┌───────────────┐
-                    │    Client     │
-                    └───────┬───────┘
-                            │
-                            ▼
-                    ┌───────────────┐
-                    │    FastAPI    │
-                    └───────┬───────┘
-                            │
-                            ▼
-                  ┌────────────────────┐
-                  │ Recommendation     │
-                  │ Service            │
-                  └─────────┬──────────┘
-                            │
-                            ▼
-                  ┌────────────────────┐
-                  │ ANN Retrieval      │
-                  └─────────┬──────────┘
-                            │
-                            ▼
-                  ┌────────────────────┐
-                  │ Redis Embeddings   │
-                  └────────────────────┘
+35 passed
+1 warning
 ```
 
-Training pipeline:
+The warning was a Starlette/AnyIO deprecation warning. The recorded run had no test failures.
 
-```text
-Raw Data
-   │
-   ▼
-Spark Processing
-   │
-   ▼
-Feature Engineering
-   │
-   ▼
-Two-Tower Training
-   │
-   ▼
-Embedding Generation
-   │
-   ▼
-ANN Index / Redis
-   │
-   ▼
-FastAPI
-```
+Test results establish that the covered software behaviors pass; they should be considered separately from offline recommendation-quality metrics.
 
 ---
 
-# ⏱️ Automated Retraining
+## 🛠️ Technology Stack
 
-Apache Airflow is planned for workflow orchestration.
+| Area | Technology |
+|---|---|
+| Programming | Python |
+| Data processing | Apache Spark / PySpark |
+| Data analysis | Pandas |
+| Visualization | Matplotlib / Seaborn |
+| Numerical computing | NumPy |
+| Machine learning | Scikit-learn |
+| Deep learning | TensorFlow / Keras |
+| Recommendation modeling | TensorFlow Recommenders |
+| API | FastAPI |
+| API server | Uvicorn |
+| Retrieval | Cosine similarity |
+| Testing | Pytest |
+| Version control | Git / GitHub |
 
-The intended pipeline is:
-
-```text
-Data Update
-    ↓
-Data Validation
-    ↓
-Feature Generation
-    ↓
-Model Training
-    ↓
-Model Evaluation
-    ↓
-Embedding Generation
-    ↓
-ANN Index Update
-    ↓
-Redis Update
-```
-
-This will provide a foundation for scheduled model and embedding updates.
+Redis, approximate nearest-neighbor indexing, Airflow, and Docker are intended extensions unless separately configured and verified in the deployed environment.
 
 ---
 
-# 🛠️ Technology Stack
-
-| Area             | Technology              |
-| ---------------- | ----------------------- |
-| Programming      | Python                  |
-| Data Processing  | Apache Spark / PySpark  |
-| Data Analysis    | Pandas                  |
-| Visualization    | Matplotlib / Seaborn    |
-| Machine Learning | Scikit-learn            |
-| Deep Learning    | TensorFlow / Keras      |
-| Recommendation   | TensorFlow Recommenders |
-| API              | FastAPI                 |
-| API Server       | Uvicorn                 |
-| Retrieval        | Cosine Similarity / ANN |
-| Cache / Storage  | Redis                   |
-| Orchestration    | Apache Airflow          |
-| Containerization | Docker                  |
-| Testing          | Pytest                  |
-| Version Control  | Git / GitHub            |
-
----
-
-# 📁 Project Structure
+## 📁 Project Structure
 
 ```text
 context-aware-neural-recommendation-engine/
@@ -737,7 +654,8 @@ context-aware-neural-recommendation-engine/
 │   │   └── features.py
 │   │
 │   ├── models/
-│   │   └── embeddings.py
+│   │   ├── embeddings.py
+│   │   └── embedding_loader.py
 │   │
 │   ├── recommendation/
 │   │   └── service.py
@@ -746,416 +664,169 @@ context-aware-neural-recommendation-engine/
 │       ├── retriever.py
 │       └── similarity.py
 │
+├── scripts/
+│   └── evaluate_ranking_metrics.py
+│
 ├── tests/
-│   ├── test_api.py
-│   ├── test_recommendation_service.py
-│   ├── test_retriever.py
-│   └── test_similarity.py
+│
+├── reports/
+│   ├── ranking_metrics.csv
+│   └── ranking_metrics_fast_sample.csv
 │
 ├── config/
-│
 ├── deployment/
-│   ├── docker/
-│   └── airflow/
-│
 ├── docs/
-│
 ├── pyproject.toml
-├── requirements.txt
-└── README.md
+└── requirements.txt
 ```
+
+This is a representative project layout. Individual files may vary according to the current repository contents.
 
 ---
 
-# 💻 Installation
+## 💻 Installation
 
-## 1. Clone the repository
+### 1. Clone the repository
 
-```bash
+```powershell
 git clone https://github.com/sashank401/context-aware-neural-recommendation-engine.git
 cd context-aware-neural-recommendation-engine
 ```
 
-## 2. Create a virtual environment
-
-Windows:
+### 2. Create a virtual environment
 
 ```powershell
 python -m venv .venv
 ```
 
-Activate:
+Activate it in PowerShell:
 
 ```powershell
 .venv\Scripts\Activate.ps1
 ```
 
-## 3. Install dependencies
+### 3. Install dependencies
 
 ```powershell
 pip install -r requirements.txt
 ```
 
----
+Use a compatible Python, TensorFlow/Keras, Java, and PySpark environment. The exact setup may depend on the installed package versions.
 
-# 🔧 Environment Configuration
+### 4. Environment configuration
 
-For the Spark environment on Windows, Java 17 is required.
+For a Windows environment using Spark, configure `JAVA_HOME` to point to the installed Java 17 directory.
 
 Example:
 
 ```powershell
-$env:JAVA_HOME="C:\Program Files\Java\jdk-17.0.20.1"
-$env:Path="$env:JAVA_HOME\bin;$env:Path"
+$env:JAVA_HOME = "C:\Program Files\Java\jdk-17"
+$env:Path = "$env:JAVA_HOME\bin;$env:Path"
 ```
 
-TensorFlow Recommenders may require the legacy Keras compatibility setting depending on the TensorFlow/Keras environment:
+If the installed TensorFlow Recommenders setup requires legacy Keras compatibility, configure the environment before importing TensorFlow:
 
 ```powershell
-$env:TF_USE_LEGACY_KERAS="1"
+$env:TF_USE_LEGACY_KERAS = "1"
 ```
 
-The exact environment configuration may vary depending on the installed TensorFlow version.
+Adjust the Java path and compatibility settings to match your environment.
 
 ---
 
-# ▶️ Running the API
+## 🔐 Data and Git Policy
 
-Start the FastAPI service:
+Large raw datasets, processed interaction files, and generated model artifacts should generally remain outside Git version control.
 
-```powershell
-uvicorn src.api.main:app --reload
-```
+The repository uses ignore rules for large data and model outputs so that source code, tests, documentation, and configuration remain manageable.
 
-Open:
-
-```text
-http://127.0.0.1:8000
-```
-
-Interactive API documentation:
-
-```text
-http://127.0.0.1:8000/docs
-```
-
-Health check:
-
-```text
-http://127.0.0.1:8000/health
-```
+Local model artifacts must be generated or obtained separately before running model-backed recommendations.
 
 ---
 
-# 🧪 Running Tests
+## 🧭 Development Status
 
-Run the test suite:
+### Implemented
 
-```powershell
-pytest
-```
+- [x] Dataset exploration and transaction analysis.
+- [x] Customer and article analysis.
+- [x] Interaction sparsity and long-tail analysis.
+- [x] Repeat-interaction analysis.
+- [x] Cold-start analysis.
+- [x] PySpark data-processing pipeline.
+- [x] Prepared training and validation interactions.
+- [x] User and item feature engineering.
+- [x] Two-Tower model training.
+- [x] User and item embedding generation.
+- [x] NumPy embedding loading and lookup.
+- [x] Cosine-similarity retrieval.
+- [x] Recommendation service.
+- [x] FastAPI root, health, and recommendation endpoints.
+- [x] Offline ranking evaluation.
+- [x] Automated engineering tests.
+- [x] Evaluation reports.
 
-The project uses `pyproject.toml` to configure the test path and Python import path.
+### Potential extensions
 
----
+- [ ] Compare neural retrieval and popularity using the same evaluation users.
+- [ ] Improve Recall@K and NDCG@K.
+- [ ] Benchmark retrieval latency across catalog sizes.
+- [ ] Add approximate nearest-neighbor indexing.
+- [ ] Integrate Redis for low-latency embedding access.
+- [ ] Configure Airflow for scheduled pipeline orchestration.
+- [ ] Add Docker-based deployment.
+- [ ] Add monitoring and automated model-quality checks.
+- [ ] Evaluate dedicated cold-start recommendation strategies.
+- [ ] Conduct broader performance and load testing.
 
-# 📚 Data Processing
-
-The transaction dataset should not be opened directly in Excel because the raw transaction file is approximately 3.5 GB.
-
-The recommended processing approach is:
-
-```text
-Raw CSV
-  ↓
-PySpark
-  ↓
-Aggregations
-  ↓
-Feature Tables
-  ↓
-ML Pipeline
-```
-
-Raw datasets are intentionally excluded from Git version control.
-
----
-
-# 🔐 Data and Git Policy
-
-Large raw datasets and generated model artifacts should not be committed to GitHub.
-
-The repository excludes:
-
-```text
-data/raw/
-data/processed/
-*.h5
-*.keras
-*.pkl
-*.joblib
-```
-
-except for required directory placeholders.
-
-This keeps the Git repository manageable while allowing the complete processing pipeline to be reproduced locally.
+These extensions are not presented as completed functionality.
 
 ---
 
-# 🧭 Development Roadmap
+## 🎓 Learning Outcomes
 
-## Phase 1 — Data Understanding
+This project demonstrates practical work in:
 
-* [x] Dataset inspection
-* [x] Large-scale transaction analysis
-* [x] Customer analysis
-* [x] Article analysis
-* [x] Interaction sparsity analysis
-* [x] Long-tail analysis
-* [x] Repeat interaction analysis
-* [x] Cold-start analysis
+- Large-scale data processing.
+- Exploratory data analysis.
+- Feature engineering.
+- Neural recommendation systems.
+- Two-Tower architectures.
+- Dense embedding generation.
+- Similarity-based retrieval.
+- Temporal model evaluation.
+- Cold-start and long-tail analysis.
+- API development.
+- Automated software testing.
+- Git-based engineering workflows.
 
-## Phase 2 — Data Processing
-
-* [x] PySpark transaction processing
-* [x] User aggregation
-* [x] Item aggregation
-* [x] Feature tables
-* [x] Temporal validation strategy
-
-## Phase 3 — Feature Engineering
-
-* [x] User feature construction
-* [x] Item feature construction
-* [x] Missing-value handling
-* [x] Feature enrichment
-
-## Phase 4 — Two-Tower Model
-
-* [ ] User Tower
-* [ ] Item Tower
-* [ ] Training pipeline
-* [ ] Negative sampling
-* [ ] Model validation
-* [ ] Model checkpointing
-
-## Phase 5 — Evaluation
-
-* [ ] Recall@K
-* [ ] NDCG@K
-* [ ] Cold-start evaluation
-* [ ] Retrieval latency evaluation
-
-## Phase 6 — Embeddings and Retrieval
-
-* [ ] User embedding generation
-* [ ] Item embedding generation
-* [ ] ANN index
-* [ ] Top-K retrieval
-* [ ] Retrieval benchmarking
-
-## Phase 7 — Serving
-
-* [x] FastAPI foundation
-* [x] Recommendation service
-* [x] Retrieval interface
-* [x] Similarity interface
-* [ ] Redis integration
-* [ ] Model-backed recommendations
-
-## Phase 8 — MLOps and Deployment
-
-* [ ] Airflow pipeline
-* [ ] Automated retraining
-* [ ] Embedding refresh
-* [ ] Docker deployment
-* [ ] End-to-end testing
-* [ ] Stress testing
-* [ ] Monitoring
+It brings together machine learning and software engineering by connecting a trained retrieval model to an application interface and evaluating the results with ranking metrics.
 
 ---
 
-# Current Implementation Status
+## 📚 Dataset Attribution
 
-The project currently includes data exploration and processing, feature engineering, a Two-Tower recommendation model, saved user and item embeddings, similarity-based retrieval, a recommendation service, and a FastAPI interface.
+This project uses the H&M Personalized Fashion Recommendations dataset provided through Kaggle.
 
-## Implemented and verified
-
-- Large-scale dataset exploration covering 31,788,324 historical transactions.
-- Chronological preparation of training and validation interactions.
-- Two-Tower model training and embedding generation.
-- Saved NumPy user and item embedding arrays.
-- User and item embedding lookup through the NumPy embedding store.
-- Cosine-similarity-based top-K item retrieval.
-- Recommendation service with lazy model loading and validation of customer IDs and recommendation limits.
-- FastAPI root, health-check, and recommendation endpoints.
-- Automated tests covering API responses, input validation, retrieval, and service behavior.
-
-## API Usage
-
-Start the API from the repository root with the virtual environment activated:
-
-```powershell
-$env:PYTHONPATH = "$PWD"
-uvicorn src.api.main:app --reload
-```
-
-The service runs at `http://127.0.0.1:8000` by default.
-
-### Available endpoints
-
-| Method | Endpoint | Purpose |
-|---|---|---|
-| GET | `/` | Check that the API is running |
-| GET | `/health` | Check service health |
-| GET | `/recommend/{customer_id}?k=5` | Retrieve up to five article recommendations |
-
-Interactive documentation is available at `http://127.0.0.1:8000/docs`.
-
-### Example request
-
-```powershell
-Invoke-RestMethod "http://127.0.0.1:8000/recommend/PASTE_REAL_CUSTOMER_ID?k=5"
-```
-
-Replace `PASTE_REAL_CUSTOMER_ID` with an actual customer ID from `models/two_tower/user_ids.npy`. Placeholder IDs may not have a corresponding trained embedding.
-
-The response contains a customer ID and a list of recommended article IDs. The recommendation endpoint accepts values of `k` from 1 to 100.
-
-## Testing
-
-Run the automated test suite from the repository root:
-
-```powershell
-$env:PYTHONPATH = "$PWD"
-pytest -q
-```
-
-The current test suite covers the API endpoints, request validation, recommendation service, embedding retrieval, and similarity calculations.
-
-## Dataset and Model Limitations
-
-The full dataset contains 31,788,324 transactions. This figure describes the historical transaction dataset analyzed and processed; it does not mean that every transaction was used to train the final model.
-
-The current saved embedding arrays contain 1,371,980 user IDs and 105,542 item IDs, with 64-dimensional embeddings. These saved artifacts are required for recommendations through the trained-embedding service.
-
-The current retrieval implementation compares the selected user's embedding against the item embeddings and sorts candidates by cosine similarity. This is a straightforward baseline and may be computationally expensive for larger catalogs.
-
-The current implementation has produced recommendations for a customer with a stored embedding. This confirms that the retrieval pipeline runs, but does not by itself establish recommendation quality or production readiness. Model evaluation should be interpreted using the measured validation metrics.
-
-## Planned Extensions
-
-The following remain potential extensions unless separately implemented and verified:
-
-- Approximate nearest-neighbor indexing for faster retrieval.
-- Redis-backed embedding storage.
-- Airflow-based automated retraining.
-- Docker-based deployment and production orchestration.
-- Further model evaluation and improvements to recommendation quality.
-
+The dataset is used for educational and research-oriented recommendation-system development. Refer to the original dataset license and terms before redistributing or publishing the underlying data.
 
 ---
 
-# 🎓 Learning Outcomes
-
-This project provides practical experience with:
-
-* Large-scale data processing
-* Recommendation systems
-* Neural retrieval
-* Two-Tower architectures
-* Embedding-based search
-* Feature engineering
-* Temporal validation
-* Cold-start analysis
-* Sparse interaction modeling
-* TensorFlow Recommenders
-* PySpark
-* FastAPI
-* Redis
-* ANN retrieval
-* Airflow
-* Docker
-* Automated testing
-* Git-based software engineering
-
----
-
-# 👨‍💻 Project Focus
-
-The project combines **Machine Learning Engineering and Software Engineering** rather than treating the recommendation model as an isolated notebook.
-
-The intended final workflow is:
-
-```text
-Data
- ↓
-Spark Processing
- ↓
-Feature Engineering
- ↓
-Two-Tower Training
- ↓
-Evaluation
- ↓
-Embedding Generation
- ↓
-ANN Retrieval
- ↓
-Redis
- ↓
-Recommendation Service
- ↓
-FastAPI
- ↓
-Client
-```
-
----
-
-# 📜 Dataset Attribution
-
-This project uses the **H&M Personalized Fashion Recommendations** dataset provided through Kaggle.
-
-The dataset is used for educational and research-oriented recommendation-system development.
-
-Please refer to the original dataset license and terms before redistributing or publishing the underlying data.
-
----
-
-# ⚠️ Project Status Disclaimer
-
-This repository is an actively developed company internship project.
-
-Some components of the final production architecture are still under development. Results, model performance, and deployment characteristics should therefore be interpreted according to the current implementation stage.
-
----
-
-# ⭐ Future Enhancements
-
-Potential future improvements include:
-
-* Context-aware user representations
-* Session-based recommendations
-* Transformer-based sequence modeling
-* Hybrid retrieval and ranking
-* Popularity-aware negative sampling
-* Better cold-start strategies
-* ANN benchmarking
-* Online feature updates
-* Model monitoring
-* Recommendation explanations
-* A/B testing infrastructure
-* Real-time recommendation updates
-
----
-
-## Author
+## 👨‍💻 Author
 
 **Sashank Varma K**
 
-Computer Science Engineering
-Machine Learning / AI / Data Science
+Computer Science Engineering  
+Machine Learning · Artificial Intelligence · Data Science
 
 ---
 
+## ⚠️ Project Status Disclaimer
+
+This project includes a trained neural retrieval model, generated embeddings, similarity-based retrieval, a FastAPI service, and offline evaluation.
+
+The recorded ranking metrics demonstrate measurable retrieval performance, but they do not establish that the model outperforms a popularity baseline. That comparison requires identical evaluation populations and rules.
+
+Production-scale ANN retrieval, Redis-backed embedding storage, automated Airflow retraining, and Docker deployment should be treated as future extensions unless their integration is independently verified.
+
+The project is a foundation for continued improvement of personalized retrieval quality, scalability, and deployment reliability.
