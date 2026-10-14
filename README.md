@@ -975,31 +975,84 @@ This keeps the Git repository manageable while allowing the complete processing 
 
 ---
 
-# 📌 Current Project Status
+# Current Implementation Status
 
-The project has completed the **large-scale data understanding, EDA, Spark processing, feature engineering, and initial recommendation-engine engineering foundation**.
+The project currently includes data exploration and processing, feature engineering, a Two-Tower recommendation model, saved user and item embeddings, similarity-based retrieval, a recommendation service, and a FastAPI interface.
 
-The next major milestone is the **Two-Tower Neural Retrieval model**.
+## Implemented and verified
 
-Current high-level pipeline status:
+- Large-scale dataset exploration covering 31,788,324 historical transactions.
+- Chronological preparation of training and validation interactions.
+- Two-Tower model training and embedding generation.
+- Saved NumPy user and item embedding arrays.
+- User and item embedding lookup through the NumPy embedding store.
+- Cosine-similarity-based top-K item retrieval.
+- Recommendation service with lazy model loading and validation of customer IDs and recommendation limits.
+- FastAPI root, health-check, and recommendation endpoints.
+- Automated tests covering API responses, input validation, retrieval, and service behavior.
 
-```text
-Large-Scale EDA              ✅
-PySpark Processing           ✅
-Feature Engineering          ✅
-Cold-Start Analysis          ✅
-FastAPI Foundation           ✅
-Retrieval Foundation         ✅
+## API Usage
 
-Two-Tower Model              🚧
-Model Evaluation             🚧
-Embedding Generation         ⏳
-ANN Retrieval                ⏳
-Redis Integration            ⏳
-Airflow                      ⏳
-Docker Deployment            ⏳
-End-to-End Production Flow  ⏳
+Start the API from the repository root with the virtual environment activated:
+
+```powershell
+$env:PYTHONPATH = "$PWD"
+uvicorn src.api.main:app --reload
 ```
+
+The service runs at `http://127.0.0.1:8000` by default.
+
+### Available endpoints
+
+| Method | Endpoint | Purpose |
+|---|---|---|
+| GET | `/` | Check that the API is running |
+| GET | `/health` | Check service health |
+| GET | `/recommend/{customer_id}?k=5` | Retrieve up to five article recommendations |
+
+Interactive documentation is available at `http://127.0.0.1:8000/docs`.
+
+### Example request
+
+```powershell
+Invoke-RestMethod "http://127.0.0.1:8000/recommend/PASTE_REAL_CUSTOMER_ID?k=5"
+```
+
+Replace `PASTE_REAL_CUSTOMER_ID` with an actual customer ID from `models/two_tower/user_ids.npy`. Placeholder IDs may not have a corresponding trained embedding.
+
+The response contains a customer ID and a list of recommended article IDs. The recommendation endpoint accepts values of `k` from 1 to 100.
+
+## Testing
+
+Run the automated test suite from the repository root:
+
+```powershell
+$env:PYTHONPATH = "$PWD"
+pytest -q
+```
+
+The current test suite covers the API endpoints, request validation, recommendation service, embedding retrieval, and similarity calculations.
+
+## Dataset and Model Limitations
+
+The full dataset contains 31,788,324 transactions. This figure describes the historical transaction dataset analyzed and processed; it does not mean that every transaction was used to train the final model.
+
+The current saved embedding arrays contain 1,371,980 user IDs and 105,542 item IDs, with 64-dimensional embeddings. These saved artifacts are required for recommendations through the trained-embedding service.
+
+The current retrieval implementation compares the selected user's embedding against the item embeddings and sorts candidates by cosine similarity. This is a straightforward baseline and may be computationally expensive for larger catalogs.
+
+The current implementation has produced recommendations for a customer with a stored embedding. This confirms that the retrieval pipeline runs, but does not by itself establish recommendation quality or production readiness. Model evaluation should be interpreted using the measured validation metrics.
+
+## Planned Extensions
+
+The following remain potential extensions unless separately implemented and verified:
+
+- Approximate nearest-neighbor indexing for faster retrieval.
+- Redis-backed embedding storage.
+- Airflow-based automated retraining.
+- Docker-based deployment and production orchestration.
+- Further model evaluation and improvements to recommendation quality.
+
 
 ---
 
