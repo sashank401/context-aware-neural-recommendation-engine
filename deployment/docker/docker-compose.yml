@@ -1,0 +1,12 @@
+services:
+  recommendation-api:
+    build:
+      context: ../..
+      dockerfile: deployment/docker/Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - ../../models/two_tower:/app/models/two_tower:ro
+    environment:
+      PYTHONPATH: /app
+    restart: unless-stopped
