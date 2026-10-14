@@ -1,0 +1,32 @@
+PROJECT 3: CONTEXT-AWARE NEURAL RECOMMENDATION ENGINE
+=====================================================
+
+API STATUS
+- Health endpoint: healthy
+- Recommendation endpoint: working
+- Sample request: /recommend/{customer_id}?k=5
+- Sample output: five article IDs returned
+
+AUTOMATED TESTS
+- Result: 35 passed
+- Warning: one Starlette/AnyIO deprecation warning
+
+OFFLINE EVALUATION
+- Sample size: 99 users
+- Neural Recall@10: 0.00%
+- Neural Recall@50: 0.00%
+- Neural Recall@100: 0.00%
+- Popularity Recall@10: 2.02%
+- Popularity Recall@50: 6.82%
+- Popularity Recall@100: 8.84%
+
+LIMITATION
+The neural model did not retrieve held-out relevant items in this
+sample. Ranking quality and embedding-to-ID alignment require further
+investigation. Business outcomes such as CTR, AOV, and revenue have
+not been established by this offline evaluation.
+
+EVIDENCE FILES
+- reports/ranking_metrics.csv
+- reports/ranking_metrics_fast_sample.csv
+- notebooks/02_two_tower_training.ipynb
