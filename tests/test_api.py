@@ -10,14 +10,16 @@ def test_root_endpoint():
     response = client.get("/")
 
     assert response.status_code == 200
-    assert response.json()["message"] == "Recommendation Engine API is running"
+    assert response.json() == {
+        "message": "Recommendation Engine API is running"
+    }
 
 
 def test_health_endpoint():
     response = client.get("/health")
 
     assert response.status_code == 200
-    assert response.json()["status"] == "healthy"
+    assert response.json() == {"status": "healthy"}
 
 
 def test_recommendation_endpoint():
@@ -28,7 +30,24 @@ def test_recommendation_endpoint():
     data = response.json()
 
     assert data["customer_id"] == "customer_001"
-    assert "recommendations" in data
+    assert isinstance(data["recommendations"], list)
+    assert len(data["recommendations"]) <= 5
+
+
+def test_recommendation_response_schema():
+    response = client.get("/recommend/customer_001?k=3")
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert set(data.keys()) == {"customer_id", "recommendations"}
+    assert isinstance(data["customer_id"], str)
+    assert isinstance(data["recommendations"], list)
+    assert all(
+        isinstance(article_id, str)
+        for article_id in data["recommendations"]
+    )
 
 
 def test_recommendation_uses_default_k():
@@ -57,5 +76,11 @@ def test_recommendation_rejects_negative_k():
 
 def test_recommendation_rejects_excessive_k():
     response = client.get("/recommend/customer_001?k=101")
+
+    assert response.status_code == 422
+
+
+def test_recommendation_rejects_non_integer_k():
+    response = client.get("/recommend/customer_001?k=abc")
 
     assert response.status_code == 422
